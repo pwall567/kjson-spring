@@ -33,11 +33,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.converter.json.AbstractJsonHttpMessageConverter
 import org.springframework.stereotype.Service
 
-import io.kjson.JSON
 import io.kjson.JSONConfig
 import io.kjson.JSONException
 import io.kjson.JSONStringify.appendJSON
 import io.kjson.fromJSONValue
+import io.kjson.parser.Parser
 
 /**
  * Spring message converter to convert messages to and from JSON using the [kjson](https://github.com/pwall567/kjson)
@@ -54,7 +54,7 @@ class JSONSpring(
     private val config: JSONConfig = config ?: JSONConfig.defaultConfig
 
     override fun readInternal(resolvedType: Type, reader: Reader): Any {
-        return JSON.parse(reader.readText())?.fromJSONValue(resolvedType, config) ?:
+        return Parser.parse(reader.readText(), config.parseOptions)?.fromJSONValue(resolvedType, config) ?:
                 throw JSONException("Message may not be \"null\"")
     }
 

@@ -5,10 +5,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 The major and minor version numbers of this repository (but not patch numbers) match the version numbers of the
 [`kjson`](https://github.com/pwall567/kjson) library used by this Spring library.
 
-## [Unreleased]
+## [3.3] - 2022-09-05
 ### Changed
-- `pom.xml`: Switched tp use properties
+- `pom.xml`: Switched to use properties
 - tests: simplified main tests, added use of annotations to confirm that kjson is being used
+- `pom.xml`: Updated version of kjson
+- `JSONSpring`: Make use of lenient parsing options
 
 ## [3.2] - 2022-07-05
 ### Added
