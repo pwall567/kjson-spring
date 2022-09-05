@@ -26,8 +26,8 @@
 package io.kjson.spring.test
 
 import kotlin.test.Test
-
-import java.time.LocalDate
+import kotlin.test.expect
+import io.kjson.spring.JSONSpring
 
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,8 +39,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 
-import io.kjson.spring.test.JSONMatcher.Companion.matchesJSON
-
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [TestConfigurationCustom::class])
 @AutoConfigureMockMvc
@@ -48,25 +46,18 @@ class SpringCustomTest {
 
     @Autowired lateinit var mockMvc: MockMvc
 
-    @Test fun `should load Spring context`() {
-        // do nothing
-    }
-
-    @Test fun `should use kjson for output`() {
+    @Test fun `should use kjson for output with custom toJSON`() {
         mockMvc.get("/testendpoint") {
             accept(MediaType.APPLICATION_JSON)
         }.andExpect {
             status { isOk() }
             content {
-                matchesJSON {
-                    property("D", LocalDate.of(2022, 7, 1))
-                    property("X", "Hello!")
-                }
+                string("""{"D":"2022-07-01","X":"Hello!"}""")
             }
         }
     }
 
-    @Test fun `should use kjson for input`() {
+    @Test fun `should use kjson for input with custom fromJSON`() {
         mockMvc.post("/testendpoint") {
             contentType = MediaType.APPLICATION_JSON
             content = """{"I":"0e457a9e-fb40-11ec-84d9-a324b304f4f9","N":"Me"}"""
@@ -74,10 +65,7 @@ class SpringCustomTest {
         }.andExpect {
             status { isOk() }
             content {
-                matchesJSON {
-                    property("D", LocalDate.of(2022, 7, 4))
-                    property("X", "0e457a9e-fb40-11ec-84d9-a324b304f4f9")
-                }
+                string("""{"D":"2022-07-04","X":"0e457a9e-fb40-11ec-84d9-a324b304f4f9"}""")
             }
         }
     }

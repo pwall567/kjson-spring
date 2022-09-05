@@ -27,7 +27,10 @@ package io.kjson.spring.test
 
 import java.time.LocalDate
 
+import io.kjson.annotation.JSONName
+
 data class ResponseData(
+    @JSONName("DATE") // just to confirm that it's using kjson!
     val date: LocalDate,
     val extra: String,
 )

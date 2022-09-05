@@ -26,6 +26,7 @@
 package io.kjson.spring.test
 
 import kotlin.test.Test
+import kotlin.test.expect
 
 import java.time.LocalDate
 import java.util.UUID
@@ -34,13 +35,23 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.web.client.RestTemplateBuilder
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.mock.http.client.MockClientHttpRequest
+import org.springframework.mock.http.client.MockClientHttpResponse
 import org.springframework.test.context.junit4.SpringRunner
+import org.springframework.test.web.client.MockRestServiceServer
+import org.springframework.test.web.client.match.MockRestRequestMatchers.method
+import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import org.springframework.web.client.getForObject
+import org.springframework.web.client.postForObject
 
-import io.kjson.spring.test.JSONMatcher.Companion.matchesJSON
+import io.kjson.parseJSON
 import io.kjson.stringifyJSON
 
 @RunWith(SpringRunner::class)
@@ -49,10 +60,7 @@ import io.kjson.stringifyJSON
 class SpringTest {
 
     @Autowired lateinit var mockMvc: MockMvc
-
-    @Test fun `should load Spring context`() {
-        // do nothing
-    }
+    @Autowired lateinit var restTemplateBuilder: RestTemplateBuilder
 
     @Test fun `should use kjson for output`() {
         mockMvc.get("/testendpoint") {
@@ -60,10 +68,7 @@ class SpringTest {
         }.andExpect {
             status { isOk() }
             content {
-                matchesJSON {
-                    property("date", LocalDate.of(2022, 7, 1))
-                    property("extra", "Hello!")
-                }
+                string(responseString)
             }
         }
     }
@@ -71,17 +76,51 @@ class SpringTest {
     @Test fun `should use kjson for input`() {
         mockMvc.post("/testendpoint") {
             contentType = MediaType.APPLICATION_JSON
-            content = """{"id":"0e457a9e-fb40-11ec-84d9-a324b304f4f9","name":"Me"}"""
+            content = """{"ID":"0e457a9e-fb40-11ec-84d9-a324b304f4f9","name":"Me"}"""
             accept(MediaType.APPLICATION_JSON)
         }.andExpect {
             status { isOk() }
             content {
-                matchesJSON {
-                    property("date", LocalDate.of(2022, 7, 4))
-                    property("extra", "0e457a9e-fb40-11ec-84d9-a324b304f4f9")
-                }
+                string("""{"DATE":"2022-07-04","extra":"0e457a9e-fb40-11ec-84d9-a324b304f4f9"}""")
             }
         }
+    }
+
+    @Test fun `should use kjson for client response`() {
+        val restTemplate = restTemplateBuilder.build()
+        val mockRestServiceServer = MockRestServiceServer.createServer(restTemplate)
+        mockRestServiceServer.expect(requestTo("/testclient")).andExpect(method(HttpMethod.GET)).andRespond {
+            createResponse(responseString)
+        }
+        val response: ResponseData = restTemplate.getForObject("/testclient")
+        expect(LocalDate.of(2022, 7, 1)) { response.date }
+        expect("Hello!") { response.extra }
+        mockRestServiceServer.verify()
+    }
+
+    @Test fun `should use kjson for client request`() {
+        val restTemplate = restTemplateBuilder.build()
+        val mockRestServiceServer = MockRestServiceServer.createServer(restTemplate)
+        mockRestServiceServer.expect(requestTo("/testclient")).andExpect(method(HttpMethod.POST)).andRespond { req ->
+            val mockRequest = req as? MockClientHttpRequest ?: throw AssertionError("Not a MockClientHttpRequest")
+            // the following line will fail if the POST data was not serialised correctly (by kjson)
+            val data: RequestData = mockRequest.bodyAsString.parseJSON() ?: throw AssertionError("Must not be null")
+            val response = ResponseData(LocalDate.of(2022, 7, 25), data.id.toString()).stringifyJSON()
+            createResponse(response)
+        }
+        val id = UUID.fromString("79c2e130-0bb7-11ed-99fa-e322ce878a96")
+        val response: ResponseData = restTemplate.postForObject("/testclient", RequestData(id, "Anything"))
+        expect(LocalDate.of(2022, 7, 25)) { response.date }
+        expect(id.toString()) { response.extra }
+        mockRestServiceServer.verify()
+    }
+
+    private fun createResponse(str: String) = MockClientHttpResponse(str.toByteArray(), HttpStatus.OK).apply {
+        headers.contentType = MediaType.APPLICATION_JSON
+    }
+
+    companion object {
+        const val responseString = """{"DATE":"2022-07-01","extra":"Hello!"}"""
     }
 
 }

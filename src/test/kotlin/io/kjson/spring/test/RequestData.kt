@@ -27,7 +27,10 @@ package io.kjson.spring.test
 
 import java.util.UUID
 
+import io.kjson.annotation.JSONName
+
 data class RequestData(
+    @JSONName("ID") // just to confirm that it's using kjson!
     val id: UUID,
     val name: String,
 )

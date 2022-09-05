@@ -29,5 +29,5 @@ import org.springframework.context.annotation.ComponentScan
 import org.springframework.test.context.ContextConfiguration
 
 @ContextConfiguration
-@ComponentScan("io.kjson.spring.test", "io.kjson.spring", "io.kjson.custom")
+@ComponentScan("io.kjson.spring", "io.kjson.custom")
 class TestConfigurationCustom
