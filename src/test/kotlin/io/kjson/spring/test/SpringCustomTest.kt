@@ -26,8 +26,6 @@
 package io.kjson.spring.test
 
 import kotlin.test.Test
-import kotlin.test.expect
-import io.kjson.spring.JSONSpring
 
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired

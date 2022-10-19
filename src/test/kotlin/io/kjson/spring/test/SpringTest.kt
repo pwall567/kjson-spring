@@ -26,6 +26,7 @@
 package io.kjson.spring.test
 
 import kotlin.test.Test
+import kotlin.test.assertTrue
 import kotlin.test.expect
 
 import java.time.LocalDate
@@ -53,9 +54,11 @@ import org.springframework.web.client.postForObject
 
 import io.kjson.parseJSON
 import io.kjson.stringifyJSON
+import net.pwall.log.LogList
+import net.pwall.log.isDebug
 
 @RunWith(SpringRunner::class)
-@SpringBootTest(classes = [TestConfiguration::class])
+@SpringBootTest(classes = [SpringTestConfiguration::class])
 @AutoConfigureMockMvc
 class SpringTest {
 
@@ -74,15 +77,20 @@ class SpringTest {
     }
 
     @Test fun `should use kjson for input`() {
-        mockMvc.post("/testendpoint") {
-            contentType = MediaType.APPLICATION_JSON
-            content = """{"ID":"0e457a9e-fb40-11ec-84d9-a324b304f4f9","name":"Me"}"""
-            accept(MediaType.APPLICATION_JSON)
-        }.andExpect {
-            status { isOk() }
-            content {
-                string("""{"DATE":"2022-07-04","extra":"0e457a9e-fb40-11ec-84d9-a324b304f4f9"}""")
+        LogList().use { logList ->
+            mockMvc.post("/testendpoint") {
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"ID":"0e457a9e-fb40-11ec-84d9-a324b304f4f9","name":"Me"}"""
+                accept(MediaType.APPLICATION_JSON)
+            }.andExpect {
+                status { isOk() }
+                content {
+                    string("""{"DATE":"2022-07-04","extra":"0e457a9e-fb40-11ec-84d9-a324b304f4f9"}""")
+                }
             }
+            assertTrue(logList.any {
+                it.name == "io.kjson.spring.JSONSpring" && it isDebug """JSON Input: {"ID":"****","name":"Me"}"""
+            })
         }
     }
 

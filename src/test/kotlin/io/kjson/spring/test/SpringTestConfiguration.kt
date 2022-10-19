@@ -25,9 +25,26 @@
 
 package io.kjson.spring.test
 
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.test.context.ContextConfiguration
+import net.pwall.log.DynamicLoggerFactory
+import net.pwall.log.Level
+import net.pwall.log.LoggerFactory
 
-@ContextConfiguration
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.ComponentScan
+
+@TestConfiguration
 @ComponentScan("io.kjson.spring")
-class TestConfiguration
+open class SpringTestConfiguration {
+
+    @Suppress("unused")
+    @Bean open fun jsonLogFactory(): LoggerFactory<*> {
+        return DynamicLoggerFactory(Level.DEBUG)
+    }
+
+    @Suppress("unused")
+    @Bean open fun jsonLogExclude(): Collection<String> {
+        return setOf("ID")
+    }
+
+}

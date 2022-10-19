@@ -33,11 +33,17 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.converter.json.AbstractJsonHttpMessageConverter
 import org.springframework.stereotype.Service
 
+import io.kjson.JSON.appendJSONValue
+import io.kjson.JSON.elidedValue
 import io.kjson.JSONConfig
 import io.kjson.JSONException
+import io.kjson.JSONSerializer
 import io.kjson.JSONStringify.appendJSON
 import io.kjson.fromJSONValue
 import io.kjson.parser.Parser
+import net.pwall.log.Level
+import net.pwall.log.Logger
+import net.pwall.log.LoggerFactory
 
 /**
  * Spring message converter to convert messages to and from JSON using the [kjson](https://github.com/pwall567/kjson)
@@ -48,18 +54,36 @@ import io.kjson.parser.Parser
 @Service
 @Suppress("unused")
 class JSONSpring(
-    @Autowired(required = false) config: JSONConfig?,
+    @Autowired(required = false) jsonConfig: JSONConfig?,
+    @Autowired(required = false) jsonLogFactory: LoggerFactory<*>?,
+    @Autowired(required = false) jsonLogName: String?,
+    @Autowired(required = false) jsonLogLevel: Level?,
+    @Autowired(required = false) val jsonLogExclude: Collection<String>?,
 ) : AbstractJsonHttpMessageConverter() {
 
-    private val config: JSONConfig = config ?: JSONConfig.defaultConfig
+    private val config: JSONConfig = jsonConfig ?: JSONConfig.defaultConfig
+    private val log: Logger? = jsonLogFactory?.let { factory ->
+        jsonLogName?.let { factory.getLogger(it) } ?: factory.logger
+    }
+    private val level: Level = jsonLogLevel ?: Level.DEBUG
 
     override fun readInternal(resolvedType: Type, reader: Reader): Any {
-        return Parser.parse(reader.readText(), config.parseOptions)?.fromJSONValue(resolvedType, config) ?:
-                throw JSONException("Message may not be \"null\"")
+        val text = reader.readText()
+        val json = Parser.parse(text, config.parseOptions)
+        log?.log(level) { "JSON Input: ${json.elidedValue(exclude = jsonLogExclude)}" }
+        return json?.fromJSONValue(resolvedType, config) ?: throw JSONException("Message may not be \"null\"")
     }
 
     override fun writeInternal(o: Any, type: Type?, writer: Writer) {
-        writer.appendJSON(o, config)
+        log.let {
+            if (it != null && it.isEnabled(level)) {
+                val json = JSONSerializer.serialize(o, config)
+                it.log(level) { "JSON Output: ${json.elidedValue(exclude = jsonLogExclude)}" }
+                writer.appendJSONValue(json)
+            }
+            else
+                writer.appendJSON(o, config)
+        }
     }
 
 }

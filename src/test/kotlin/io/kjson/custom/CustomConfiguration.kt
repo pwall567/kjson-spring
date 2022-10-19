@@ -41,7 +41,7 @@ import io.kjson.spring.test.ResponseData
 @Suppress("unused")
 open class CustomConfiguration {
 
-    @Bean open fun config(): JSONConfig {
+    @Bean open fun jsonConfig(): JSONConfig {
         return JSONConfig {
             toJSON<ResponseData> {
                 it?.let {
