@@ -38,13 +38,9 @@ import org.springframework.context.annotation.ComponentScan
 open class SpringTestConfiguration {
 
     @Suppress("unused")
-    @Bean open fun jsonLogFactory(): LoggerFactory<*> {
-        return DynamicLoggerFactory(Level.DEBUG)
-    }
+    @Bean open fun jsonLogFactory(): LoggerFactory<*> = DynamicLoggerFactory(Level.DEBUG)
 
     @Suppress("unused")
-    @Bean open fun jsonLogExclude(): Collection<String> {
-        return setOf("ID")
-    }
+    @Bean open fun jsonLogExclude(): Collection<String> = setOf("ID")
 
 }

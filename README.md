@@ -33,7 +33,7 @@ or, when using Spring XML configuration:
 Note that the default Spring behaviour is to scan the package in which the `@ComponentScan`
 (or `@SpringBootApplication`) occurs.
 When one or more packages or classes are specified on a `@ComponentScan`, only the specified package(s) will be scanned;
-to include the current package it must be specified explicitly.
+to retain the default behaviour, the current package must be also specified, along with `io.kjson.spring`.
 
 ## Configuration
 
@@ -54,7 +54,7 @@ open class SpringAppConfig {
 ```
 This example shows just the `allowExtra` option being set; any of the configuration options, including custom
 serialization and deserialization, may be used.
-If no `JSONConfig` is provided the `JSONConfig.defaultConfig` will be used.
+If no `JSONConfig` is provided, the `JSONConfig.defaultConfig` will be used.
 
 ## Client REST Calls
 
@@ -68,7 +68,7 @@ The following line will get the default `RestTemplateBuilder`:
 ```kotlin
     @Autowired lateinit var restTemplateBuilder: RestTemplateBuilder
 ```
-And then, the following will get a `RestTemplate` will the converters configured in the `RestTemplateBuilder`:
+And then, the following will get a `RestTemplate` with the converters configured in the `RestTemplateBuilder`:
 ```kotlin
         val restTemplate = restTemplateBuilder.build()
 ```
@@ -82,30 +82,67 @@ and:
         val restTemplate = RestTemplate(listOf(jsonSpring))
 ```
 
+## Logging
+
+`kjson-spring` can be configured to log all messages processed by the JSON converter, input and output.
+To make use of this functionality, the `jsonLogFactory` must be configured, as follows:
+```kotlin
+    @Bean open fun jsonLogFactory(): LoggerFactory<*> = DynamicLoggerFactory(Level.DEBUG)
+```
+
+The `LoggerFactory` in this case is from the [log-front-api](https://github.com/pwall567/log-front-api) library;
+this is a logging fa&ccedil;ade library which will delegate to any of a number of implementations.
+The example above uses the `DynamicLoggerFactory` class from the [log-front](https://github.com/pwall567/log-front)
+library, and this implementation uses `slf4j` if those classes are present (they generally are in a Spring application),
+or the Java Logging framework if a configuration file for that system is specified, or if no other logging mechanism is
+available, logs to the standard output.
+
+For the majority of users who do not wish to learn another logging library, the example above will meet most
+requirements (the `Level.Debug` in the example is the default level to be used by `Logger` objects created by this
+`LoggerFactory`).
+
+The name of the `Logger` may also be specified:
+```kotlin
+    @Bean open fun jsonLogName(): String = "JSON Logging"
+```
+The default name is the name of the class instantiating the `Logger`, which in this case is
+`io.kjson.spring.JSONSpring`.
+
+## Log Eliding
+
+When logging JSON content, it is often important to ensure that Personally Identifiable Information (PII) is not
+included in the logged data.
+The logging functionality of `kjson-spring` allows the specification of an optional "exclude" set of property names.
+The values of properties with these names will be replaced by `****` in the logs, wherever they appear in a JSON
+structure.
+```kotlin
+    @Bean open fun jsonLogExclude(): Collection<String> = setOf("creditCardNumber", "licenceNumber")
+```
+
 ## Dependency Specification
 
-The latest version of the library is 3.8 (the version number of this library matches the version of `kjson` with which
+The latest version of the library is 3.9 (the version number of this library matches the version of `kjson` with which
 it was built), and it may be obtained from the Maven Central repository.
 
-This version was built using version 5.3.20 of Spring, and version 2.7.0 of Spring Boot.
+This version was built using version 5.3.23 of Spring, and version 2.7.4 of Spring Boot.
 
 ### Maven
 ```xml
     <dependency>
       <groupId>io.kjson</groupId>
       <artifactId>kjson-spring</artifactId>
-      <version>3.8</version>
+      <version>3.9</version>
     </dependency>
 ```
 ### Gradle
 ```groovy
-    implementation 'io.kjson:kjson-spring:3.8'
+    implementation 'io.kjson:kjson-spring:3.9'
 ```
 ### Gradle (kts)
 ```kotlin
-    implementation("io.kjson:kjson-spring:3.8")
+    implementation("io.kjson:kjson-spring:3.9")
 ```
 
 Peter Wall
 
-2022-10-19
+2022-11-13
