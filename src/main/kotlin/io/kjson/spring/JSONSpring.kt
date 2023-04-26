@@ -38,9 +38,9 @@ import io.kjson.JSON.elidedValue
 import io.kjson.JSONConfig
 import io.kjson.JSONException
 import io.kjson.JSONSerializer
+import io.kjson.JSONStreamer
 import io.kjson.JSONStringify.appendJSON
 import io.kjson.fromJSONValue
-import io.kjson.parser.Parser
 import net.pwall.log.Level
 import net.pwall.log.Logger
 import net.pwall.log.LoggerFactory
@@ -68,8 +68,11 @@ class JSONSpring(
     private val level: Level = jsonLogLevel ?: Level.DEBUG
 
     override fun readInternal(resolvedType: Type, reader: Reader): Any {
-        val text = reader.readText()
-        val json = Parser.parse(text, config.parseOptions)
+        val bufferedReader = reader.buffered()
+        val json = JSONStreamer(config.parseOptions).apply {
+            while (!isClosed)
+                accept(bufferedReader.read())
+        }.result
         log?.log(level) { "JSON Input: ${json.elidedValue(exclude = jsonLogExclude)}" }
         return json?.fromJSONValue(resolvedType, config) ?: throw JSONException("Message may not be \"null\"")
     }
